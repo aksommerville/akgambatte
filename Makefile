@@ -16,6 +16,8 @@ OFILES:=$(patsubst src/%,mid/%.o,$(basename $(CFILES)))
 mid/%.o:src/%.c;$(PRECMD) $(CC) -o $@ $<
 mid/%.o:src/%.cpp;$(PRECMD) $(CXX) -o $@ $<
 
+-include $(OFILES:.o=.d)
+
 EXE:=out/akgambatte
 all:$(EXE)
 $(EXE):$(OFILES);$(PRECMD) $(LD) -o $@ $^ $(LDPOST)
