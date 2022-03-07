@@ -7,11 +7,9 @@ extern "C" {
   #include "emuhost.h"
 }
 
-//TODO highly temporary
-
 #define AKG_FB_W 160
 #define AKG_FB_H 144
-#define AKG_AUDIO_BUFFER_NOMINAL_SIZE_FRAMES ((35112+46)/47)
+#define AKG_AUDIO_BUFFER_NOMINAL_SIZE_FRAMES 35112
 #define AKG_AUDIO_BUFFER_SIZE_FRAMES (AKG_AUDIO_BUFFER_NOMINAL_SIZE_FRAMES+2064)
 #define AKG_AUDIO_BUFFER_SIZE_SAMPLES (AKG_AUDIO_BUFFER_SIZE_FRAMES*2)
 
@@ -41,16 +39,6 @@ static int akg_cb_init(void *userdata) {
 static void akg_cb_quit(void *userdata) {
 }
 
-static void akg_swap_pixels() {
-  uint8_t *v=(uint8_t*)akg_fb;
-  int i=AKG_FB_W*AKG_FB_H;
-  for (;i-->0;v+=4) {
-    uint8_t b=v[0],r=v[2];
-    v[0]=r;
-    v[2]=b;
-  }
-}
-
 static void akg_remove_dc(int16_t *v,int c) {
   for (;c-->0;v++) (*v)+=16384;
 }
@@ -65,7 +53,6 @@ static int akg_cb_update(void *userdata) {
   }
   int samplec=framec<<1;
   akg_remove_dc(akg_audio_buffer,samplec);
-  if (fb) akg_swap_pixels();
   eh_hi_frame(fb,akg_audio_buffer,samplec);
   return 0;
 }
