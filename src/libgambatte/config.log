@@ -1,0 +1,12 @@
+file /home/andy/proj/thirdparty/gambatte/gambatte_src-r571/libgambatte/SConstruct,line 45:
+	Configure(confdir = .sconf_temp)
+scons: Configure: Checking for C header file zlib.h... 
+.sconf_temp/conftest_0.c <-
+  |
+  |#include <zlib.h>
+  |
+  |
+gcc -o .sconf_temp/conftest_0.o -c -Wall -Wextra -O2 -fomit-frame-pointer -DHAVE_STDINT_H -Isrc -Iinclude -I/home/andy/proj/thirdparty/gambatte/gambatte_src-r571/common .sconf_temp/conftest_0.c
+scons: Configure: yes
+
+

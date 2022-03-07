@@ -1,0 +1,22 @@
+2022-03-06
+Selected Gambatte as the likeliest candidate for an Emuhost Gameboy (over SameBoy and Gearboy).
+Seems it is also split on the proper lines, we only need libgambatte.
+
+Try truly from scratch, don't bother with sinamas's build scripts or app layers.
+Try without scons too.
+
+Took libgambatte and common from Gambatte.
+
+New directory src/libgambatte/providers for things implemented by Gambatte's app layer:
+  usec_t getusecs();
+  void usecsleep(usec_t usecs);
+  
+OK! It builds without much fuss.
+Look at its SDL implementation and start wiring up...
+See GB.runFor() in gambatte.h -- a work of art, it does and explains exactly what we need.
+Beware, when he says "sample" he means "frame".
+
+I guess Gameboys emit audio at 2 MHz???
+[x] Update Emuhost to allow that crazy rate.
+  - Need a way larger buffer in aucvt. Might need to adapt there.
+[x] Provide input.
