@@ -11,7 +11,7 @@ extern "C" {
 
 #define AKG_FB_W 160
 #define AKG_FB_H 144
-#define AKG_AUDIO_BUFFER_NOMINAL_SIZE_FRAMES 35112
+#define AKG_AUDIO_BUFFER_NOMINAL_SIZE_FRAMES ((35112+46)/47)
 #define AKG_AUDIO_BUFFER_SIZE_FRAMES (AKG_AUDIO_BUFFER_NOMINAL_SIZE_FRAMES+2064)
 #define AKG_AUDIO_BUFFER_SIZE_SAMPLES (AKG_AUDIO_BUFFER_SIZE_FRAMES*2)
 
@@ -45,12 +45,14 @@ static void akg_swap_pixels() {
   uint8_t *v=(uint8_t*)akg_fb;
   int i=AKG_FB_W*AKG_FB_H;
   for (;i-->0;v+=4) {
-    uint8_t b=v[0],g=v[1],r=v[2];
+    uint8_t b=v[0],r=v[2];
     v[0]=r;
-    v[1]=g;
     v[2]=b;
-    v[3]=0;
   }
+}
+
+static void akg_remove_dc(int16_t *v,int c) {
+  for (;c-->0;v++) (*v)+=16384;
 }
 
 static int akg_cb_update(void *userdata) {
@@ -62,6 +64,7 @@ static int akg_cb_update(void *userdata) {
     framec=result;
   }
   int samplec=framec<<1;
+  akg_remove_dc(akg_audio_buffer,samplec);
   if (fb) akg_swap_pixels();
   eh_hi_frame(fb,akg_audio_buffer,samplec);
   return 0;
@@ -113,7 +116,7 @@ int main(int argc,char **argv) {
     .video_width=AKG_FB_W,
     .video_height=AKG_FB_H,
     .video_format=EH_VIDEO_FORMAT_XBGR8888,
-    .audio_rate=2097152,
+    .audio_rate=2097152/47,
     .audio_chanc=2,
     .audio_format=EH_AUDIO_FORMAT_S16,
     .playerc=1,

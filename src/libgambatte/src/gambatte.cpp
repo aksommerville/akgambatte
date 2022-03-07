@@ -53,18 +53,42 @@ GB::~GB() {
 	delete p_;
 }
 
+// I tried and failed to reduce frequency coming out of the sound unit.
+// Reducing it here instead is pretty simple and experimentally, works out nice.
+static gambatte::uint_least32_t *hifreq_sound = 0;
+static int hifreq_sounda = 0;
+#define GB_FREQREDUCE 47
+
 std::ptrdiff_t GB::runFor(gambatte::uint_least32_t *const videoBuf, std::ptrdiff_t const pitch,
                           gambatte::uint_least32_t *const soundBuf, std::size_t &samples) {
 	if (!p_->cpu.loaded()) {
 		samples = 0;
 		return -1;
 	}
+	
+	std::size_t hifreq_samples = samples * GB_FREQREDUCE;
+	if (hifreq_samples > hifreq_sounda) {
+		hifreq_sound = (gambatte::uint_least32_t*)realloc(hifreq_sound, sizeof(gambatte::uint_least32_t) * hifreq_samples);
+		if (!hifreq_sound) {
+			samples = 0;
+			return -1;
+		}
+		hifreq_sounda = hifreq_samples;
+	}
 
 	p_->cpu.setVideoBuffer(videoBuf, pitch);
-	p_->cpu.setSoundBuffer(soundBuf);
+	p_->cpu.setSoundBuffer(hifreq_sound);
 
-	long const cyclesSinceBlit = p_->cpu.runFor(samples * 2);
-	samples = p_->cpu.fillSoundBuffer();
+	long cyclesSinceBlit = p_->cpu.runFor(hifreq_samples * 2);
+	hifreq_samples = p_->cpu.fillSoundBuffer();
+	samples = hifreq_samples / GB_FREQREDUCE;
+	cyclesSinceBlit /= GB_FREQREDUCE;
+	
+	const gambatte::uint_least32_t *src = hifreq_sound;
+	gambatte::uint_least32_t *dst = soundBuf;
+	int i = samples;
+	for (; i-->0; src+=GB_FREQREDUCE, dst++) *dst = *src;
+	
 	return cyclesSinceBlit >= 0
 	     ? static_cast<std::ptrdiff_t>(samples) - (cyclesSinceBlit >> 1)
 	     : cyclesSinceBlit;
