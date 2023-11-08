@@ -34,6 +34,14 @@ static int akg_cb_configure(const char *k,int kc,const char *v,int vc,int vn) {
 static int akg_cb_load(const char *path) {
   akg_gb.setInputGetter(&akg_input);
   
+  char *savedir=0;
+  int savedirc=eh_get_scratch_directory(&savedir);
+  if (savedirc>0) {
+    fprintf(stderr,"savedir: %s\n",savedir);
+    akg_gb.setSaveDir(savedir);
+    free(savedir);
+  }
+  
   gambatte::LoadRes const error = akg_gb.load(path,
     gambatte::GB::GBA_CGB|gambatte::GB::MULTICART_COMPAT
   );
