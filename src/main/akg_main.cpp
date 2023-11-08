@@ -27,23 +27,41 @@ static uint32_t akg_fb[AKG_FB_W*AKG_FB_H];
 static int16_t akg_audio_buffer[AKG_AUDIO_BUFFER_SIZE_SAMPLES];
 static MyInputGetter akg_input;
 
-static int akg_cb_param(void *userdata,const char *k,int kc,const char *v,int vc) {
+static int akg_cb_configure(const char *k,int kc,const char *v,int vc,int vn) {
   return 0;
 }
 
-static int akg_cb_init(void *userdata) {
+static int akg_cb_load(const char *path) {
   akg_gb.setInputGetter(&akg_input);
+  
+  gambatte::LoadRes const error = akg_gb.load(path,
+    gambatte::GB::GBA_CGB|gambatte::GB::MULTICART_COMPAT
+  );
+  if (error) {
+    fprintf(stderr,"gambatte.load() failed %s\n",to_string(error).c_str());
+    return -1;
+  }
   return 0;
-}
-
-static void akg_cb_quit(void *userdata) {
 }
 
 static void akg_remove_dc(int16_t *v,int c) {
   for (;c-->0;v++) (*v)+=16384;
 }
 
-static int akg_cb_update(void *userdata) {
+static int akg_cb_update(int partial) {
+
+  uint16_t input=eh_input_get(0);
+  akg_input.state=
+    ((input&EH_BTN_LEFT)?(gambatte::InputGetter::Button::LEFT):0)|
+    ((input&EH_BTN_RIGHT)?(gambatte::InputGetter::Button::RIGHT):0)|
+    ((input&EH_BTN_UP)?(gambatte::InputGetter::Button::UP):0)|
+    ((input&EH_BTN_DOWN)?(gambatte::InputGetter::Button::DOWN):0)|
+    ((input&EH_BTN_SOUTH)?(gambatte::InputGetter::Button::A):0)|
+    ((input&EH_BTN_WEST)?(gambatte::InputGetter::Button::B):0)|
+    ((input&EH_BTN_AUX1)?(gambatte::InputGetter::Button::START):0)|
+    ((input&EH_BTN_AUX2)?(gambatte::InputGetter::Button::SELECT):0)|
+  0;
+
   size_t framec=AKG_AUDIO_BUFFER_NOMINAL_SIZE_FRAMES;
   ptrdiff_t result=akg_gb.runFor((uint_least32_t*)akg_fb,AKG_FB_W,(uint_least32_t*)akg_audio_buffer,framec);
   void *fb=0;
@@ -53,68 +71,31 @@ static int akg_cb_update(void *userdata) {
   }
   int samplec=framec<<1;
   akg_remove_dc(akg_audio_buffer,samplec);
-  eh_hi_frame(fb,akg_audio_buffer,samplec);
-  return 0;
-}
-
-static int akg_gameboy_button_from_emuhost(int btnid) {
-  switch (btnid) {
-    case EH_BUTTON_LEFT: return gambatte::InputGetter::Button::LEFT;
-    case EH_BUTTON_RIGHT: return gambatte::InputGetter::Button::RIGHT;
-    case EH_BUTTON_UP: return gambatte::InputGetter::Button::UP;
-    case EH_BUTTON_DOWN: return gambatte::InputGetter::Button::DOWN;
-    case EH_BUTTON_A: return gambatte::InputGetter::Button::A;
-    case EH_BUTTON_B: return gambatte::InputGetter::Button::B;
-    case EH_BUTTON_AUX2: return gambatte::InputGetter::Button::SELECT;
-    case EH_BUTTON_AUX1: return gambatte::InputGetter::Button::START;
-  }
-  return 0;
-}
-
-static int akg_cb_player_input(void *userdata,int plrid,int btnid,int value,int state) {
-  int gbmask=akg_gameboy_button_from_emuhost(btnid);
-  if (gbmask) {
-    if (value) akg_input.state|=gbmask;
-    else akg_input.state&=~gbmask;
-  }
-  return 0;
-}
-
-static int akg_cb_text_input(void *userdata,int codepoint) {
-  return 0;
-}
-
-static int akg_cb_reset(void *userdata,const char *path) {
-  
-  gambatte::LoadRes const error = akg_gb.load(path,
-    gambatte::GB::GBA_CGB|gambatte::GB::MULTICART_COMPAT
-  );
-  if (error) {
-    fprintf(stderr,"gambatte.load() failed %s\n",to_string(error).c_str());
-    return -1;
-  }
-
+  eh_video_write(fb);
+  eh_audio_write(akg_audio_buffer,samplec>>1);
   return 0;
 }
 
 int main(int argc,char **argv) {
-  struct eh_hi_delegate delegate={
-    .video_rate=60,
+  struct eh_delegate delegate={
+    .name="akgambatte",
+    .iconrgba=0,//TODO
+    .iconw=0,
+    .iconh=0,
     .video_width=AKG_FB_W,
     .video_height=AKG_FB_H,
-    .video_format=EH_VIDEO_FORMAT_XBGR8888,
+    .video_format=EH_VIDEO_FORMAT_RGB32,
+    .rmask=0x000000ff,
+    .gmask=0x0000ff00,
+    .bmask=0x00ff0000,
+    .video_rate=60,
     .audio_rate=2097152/47,
     .audio_chanc=2,
-    .audio_format=EH_AUDIO_FORMAT_S16,
+    .audio_format=EH_AUDIO_FORMAT_S16N,
     .playerc=1,
-    .appname="akg",
-    .param=akg_cb_param,
-    .init=akg_cb_init,
-    .quit=akg_cb_quit,
+    .configure=akg_cb_configure,
+    .load_file=akg_cb_load,
     .update=akg_cb_update,
-    .player_input=akg_cb_player_input,
-    .text_input=akg_cb_text_input,
-    .reset=akg_cb_reset,
   };
-  return eh_hi_main(&delegate,argc,argv);
+  return eh_main(argc,argv,&delegate);
 }
