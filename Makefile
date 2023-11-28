@@ -4,12 +4,14 @@ PRECMD=echo "  $(@F)" ; mkdir -p $(@D) ;
 
 #TODO Clean this up and make more portable. Experimental for now...
 
+LIBEMUHOST:=../ra3/out/libemuhost.a
+
 CCINC:=-Isrc -Isrc/libgambatte/include -Isrc/libgambatte/src -Isrc/libgambatte/common -I../ra3/out/include
 CCDEF:=-DHAVE_CSTDINT=1
 CC:=gcc -c -MMD -O2 $(CCINC) $(CCDEF) -Werror -Wimplicit
 CXX:=g++ -c -MMD -O2 $(CCINC) $(CCDEF) -Werror
 LD:=g++
-LDPOST:=../ra3/out/libemuhost.a -lpthread -lz -lpulse-simple -lasound -lGL -lGLESv2 -ldrm -lgbm -lEGL -lX11
+LDPOST:=-lpthread -lz -lpulse-simple -lasound -lGL -lGLESv2 -ldrm -lgbm -lEGL -lX11 -lXinerama
 
 CFILES:=$(shell find src -name '*.c' -or -name '*.cpp')
 OFILES:=$(patsubst src/%,mid/%.o,$(basename $(CFILES)))
@@ -20,7 +22,7 @@ mid/%.o:src/%.cpp;$(PRECMD) $(CXX) -o $@ $<
 
 EXE:=out/akgambatte
 all:$(EXE)
-$(EXE):$(OFILES);$(PRECMD) $(LD) -o $@ $^ $(LDPOST)
+$(EXE):$(OFILES) $(LIBEMUHOST);$(PRECMD) $(LD) -o $@ $^ $(LDPOST)
 
 clean:;rm -rf mid out
 
