@@ -2,16 +2,18 @@ all:
 .SILENT:
 PRECMD=echo "  $(@F)" ; mkdir -p $(@D) ;
 
-#TODO Clean this up and make more portable. Experimental for now...
+EHCFG:=../ra3/out/emuhost-config
+EH_CFLAGS:=$(shell $(EHCFG) --cflags)
+EH_LDFLAGS:=$(shell $(EHCFG) --ldflags)
+EH_LIBS:=$(shell $(EHCFG) --libs)
+EH_DEPS:=$(shell $(EHCFG) --deps)
 
-LIBEMUHOST:=../ra3/out/libemuhost.a
-
-CCINC:=-Isrc -Isrc/libgambatte/include -Isrc/libgambatte/src -Isrc/libgambatte/common -I../ra3/out/include
+CCINC:=-Isrc -Isrc/libgambatte/include -Isrc/libgambatte/src -Isrc/libgambatte/common
 CCDEF:=-DHAVE_CSTDINT=1
-CC:=gcc -c -MMD -O2 $(CCINC) $(CCDEF) -Werror -Wimplicit
-CXX:=g++ -c -MMD -O2 $(CCINC) $(CCDEF) -Werror
-LD:=g++
-LDPOST:=-lpthread -lz -lpulse-simple -lasound -lGL -lGLESv2 -ldrm -lgbm -lEGL -lX11 -lXinerama
+CC:=gcc -c -MMD -O2 $(CCINC) $(CCDEF) $(EH_CFLAGS) -Werror -Wimplicit
+CXX:=g++ -c -MMD -O2 $(CCINC) $(CCDEF) $(EH_CFLAGS) -Werror
+LD:=g++ $(EH_LDFLAGS)
+LDPOST:=$(EH_LIBS)
 
 CFILES:=$(shell find src -name '*.c' -or -name '*.cpp')
 OFILES:=$(patsubst src/%,mid/%.o,$(basename $(CFILES)))
@@ -22,7 +24,7 @@ mid/%.o:src/%.cpp;$(PRECMD) $(CXX) -o $@ $<
 
 EXE:=out/akgambatte
 all:$(EXE)
-$(EXE):$(OFILES) $(LIBEMUHOST);$(PRECMD) $(LD) -o $@ $^ $(LDPOST)
+$(EXE):$(OFILES) $(EH_DEPS);$(PRECMD) $(LD) -o $@ $(OFILES) $(LDPOST)
 
 clean:;rm -rf mid out
 
