@@ -52,8 +52,10 @@ static int akg_cb_load(const char *path) {
   return 0;
 }
 
-static void akg_remove_dc(int16_t *v,int c) {
-  for (;c-->0;v++) (*v)+=16384;
+static void akg_condition_audio(int16_t *v,int c) {
+  for (;c-->0;v++) {
+    *v=*v>>2;
+  }
 }
 
 static int akg_cb_update(int partial) {
@@ -78,7 +80,7 @@ static int akg_cb_update(int partial) {
     framec=result;
   }
   int samplec=framec<<1;
-  akg_remove_dc(akg_audio_buffer,samplec);
+  akg_condition_audio(akg_audio_buffer,samplec);
   eh_video_write(fb);
   eh_audio_write(akg_audio_buffer,samplec>>1);
   return 0;

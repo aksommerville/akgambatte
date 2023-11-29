@@ -58,6 +58,7 @@ GB::~GB() {
 static gambatte::uint_least32_t *hifreq_sound = 0;
 static int hifreq_sounda = 0;
 #define GB_FREQREDUCE 47
+static int csbslop=0;
 
 std::ptrdiff_t GB::runFor(gambatte::uint_least32_t *const videoBuf, std::ptrdiff_t const pitch,
                           gambatte::uint_least32_t *const soundBuf, std::size_t &samples) {
@@ -82,7 +83,12 @@ std::ptrdiff_t GB::runFor(gambatte::uint_least32_t *const videoBuf, std::ptrdiff
 	long cyclesSinceBlit = p_->cpu.runFor(hifreq_samples * 2);
 	hifreq_samples = p_->cpu.fillSoundBuffer();
 	samples = hifreq_samples / GB_FREQREDUCE;
+	csbslop += cyclesSinceBlit % GB_FREQREDUCE;
 	cyclesSinceBlit /= GB_FREQREDUCE;
+	if (csbslop >= GB_FREQREDUCE) {
+	  cyclesSinceBlit++;
+	  csbslop -= GB_FREQREDUCE;
+	}
 	
 	const gambatte::uint_least32_t *src = hifreq_sound;
 	gambatte::uint_least32_t *dst = soundBuf;
