@@ -28,5 +28,5 @@ $(EXE):$(OFILES) $(EH_DEPS);$(PRECMD) $(LD) -o $@ $(OFILES) $(LDPOST)
 
 clean:;rm -rf mid out
 
-run:$(EXE);$(EXE) ~/rom/gb/z/zelda_seasons.gz
+run:$(EXE);$(EXE) ~/rom/gameboy/z/zas.gz --pixel-refresh=0.5
 #run:$(EXE);$(EXE) ~/rom/gb/g/gargoyles_quest.gb
