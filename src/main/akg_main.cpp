@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <string.h>
 #include <limits.h>
 #include "gambatte.h"
 #include "inputgetter.h"
@@ -26,8 +27,33 @@ static gambatte::GB akg_gb;
 static uint32_t akg_fb[AKG_FB_W*AKG_FB_H];
 static int16_t akg_audio_buffer[AKG_AUDIO_BUFFER_SIZE_SAMPLES];
 static MyInputGetter akg_input;
+static int akg_load_flags=gambatte::GB::GBA_CGB|gambatte::GB::MULTICART_COMPAT;
 
 static int akg_cb_configure(const char *k,int kc,const char *v,int vc,int vn) {
+
+  // --gambatte-load=GBA_CGB,MULTICART_COMPAT,FORCE_DMG,0
+  // The default (GBA_CGB,MULTICART_COMPAT) works for almost every game.
+  if ((kc==13)&&!memcmp(k,"gambatte-load",13)) {
+    akg_load_flags=0;
+    int vp=0; while (vp<vc) {
+      if (v[vp]==',') { vp++; continue; }
+      if ((unsigned char)v[vp]<=0x20) { vp++; continue; }
+      const char *token=v+vp;
+      int tokenc=0;
+      while ((vp<vc)&&(v[vp++]!=',')) tokenc++;
+      while (tokenc&&((unsigned char)token[tokenc-1]<=0x20)) tokenc--;
+      if ((tokenc==7)&&!memcmp(token,"GBA_CGB",7)) akg_load_flags|=gambatte::GB::GBA_CGB;
+      else if ((tokenc==16)&&!memcmp(token,"MULTICART_COMPAT",16)) akg_load_flags|=gambatte::GB::MULTICART_COMPAT;
+      else if ((tokenc==9)&&!memcmp(token,"FORCE_DMG",9)) akg_load_flags|=gambatte::GB::FORCE_DMG;
+      else if ((tokenc==1)&&!memcmp(token,"0",1)) ;
+      else {
+        fprintf(stderr,"Unexpected token '%.*s' in --gambatte-load, expected one of: GBA_CGB MULTICART_COMPAT FORCE_DMG\n",tokenc,token);
+        return -2;
+      }
+    }
+    return 1;
+  }
+  
   return 0;
 }
 
@@ -42,9 +68,7 @@ static int akg_cb_load(const char *path) {
     free(savedir);
   }
   
-  gambatte::LoadRes const error = akg_gb.load(path,
-    gambatte::GB::GBA_CGB|gambatte::GB::MULTICART_COMPAT
-  );
+  gambatte::LoadRes const error = akg_gb.load(path,akg_load_flags);
   if (error) {
     fprintf(stderr,"gambatte.load() failed %s\n",to_string(error).c_str());
     return -1;
@@ -99,7 +123,7 @@ int main(int argc,char **argv) {
     .gmask=0x0000ff00,
     .bmask=0x00ff0000,
     .video_rate=60,
-    .audio_rate=2097152/47,
+    .audio_rate=2097152/48,
     .audio_chanc=2,
     .audio_format=EH_AUDIO_FORMAT_S16N,
     .playerc=1,

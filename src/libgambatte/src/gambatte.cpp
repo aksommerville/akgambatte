@@ -57,7 +57,7 @@ GB::~GB() {
 // Reducing it here instead is pretty simple and experimentally, works out nice.
 static gambatte::uint_least32_t *hifreq_sound = 0;
 static int hifreq_sounda = 0;
-#define GB_FREQREDUCE 47
+#define GB_FREQREDUCE 48
 static int csbslop=0;
 
 std::ptrdiff_t GB::runFor(gambatte::uint_least32_t *const videoBuf, std::ptrdiff_t const pitch,
