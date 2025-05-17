@@ -11,7 +11,7 @@ EH_DEPS:=$(shell $(EHCFG) --deps)
 CCINC:=-Isrc -Isrc/libgambatte/include -Isrc/libgambatte/src -Isrc/libgambatte/common
 CCDEF:=-DHAVE_CSTDINT=1
 CC:=gcc -c -MMD -O2 $(CCINC) $(CCDEF) $(EH_CFLAGS) -Werror -Wimplicit
-CXX:=g++ -c -MMD -O2 $(CCINC) $(CCDEF) $(EH_CFLAGS) -Werror
+CXX:=g++ -c -MMD -O2 $(CCINC) $(CCDEF) $(EH_CFLAGS) -Werror -Wno-deprecated-declarations
 LD:=g++ $(EH_LDFLAGS)
 LDPOST:=$(EH_LIBS)
 
